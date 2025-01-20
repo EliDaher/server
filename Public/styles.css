@@ -1,0 +1,223 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;   
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/*.internetTable th:nth-child(3n),
+.internetTable td:nth-child(3n),
+.internetTable th:nth-child(3n+1),
+.internetTable td:nth-child(3n+1),
+.internetTable th:nth-child(3n+2),
+.internetTable td:nth-child(3n+2){
+    background-color: #ee7900;
+}*/
+.internetTable th:nth-child(3n),
+.internetTable td:nth-child(3n) input{
+    width: 75px;
+}
+.internetTable th:nth-child(6n),
+.internetTable td:nth-child(6n),
+.internetTable th:nth-child(6n+1),
+.internetTable td:nth-child(6n+1),
+.internetTable th:nth-child(6n+2),
+.internetTable td:nth-child(6n+2){
+    background: #ff8a0050;
+}
+.internetTable th:nth-child(3n+2),
+.internetTable td:nth-child(3n+2) input{
+    width: 50px;
+}
+.internetTable th:nth-child(2),
+.internetTable td:nth-child(2) input{
+    width: 100px;
+}
+.internetTable th:nth-child(3),
+.internetTable td:nth-child(3) input{
+    width: 150px;
+}
+.internetTable th:nth-child(4),
+.internetTable td:nth-child(4) input,
+.internetTable th:nth-child(5),
+.internetTable td:nth-child(5) input,
+.internetTable th:nth-child(6),
+.internetTable td:nth-child(6) input,
+.internetTable th:nth-child(7),
+.internetTable td:nth-child(7) input{
+    width: 55px;
+}
+
+.internetTable th:nth-child(8),
+.internetTable td:nth-child(8) input{
+    width: 200px;
+}
+
+.internetTable, .elecTable{
+    table-layout: fixed;
+    border: 3px solid #e1e1e1;
+    overflow: scroll;
+    margin: auto;
+}
+
+.internetTable:has(tbody:empty),
+.elecTable:has(tbody:empty),
+.copyTable:has(tbody:empty),
+.tableContainer:has(.internetTable):has(tbody:empty)::-webkit-scrollbar{
+    display: none;
+}
+
+tbody td{
+    border: 2px solid #aaa;
+}
+
+thead td{
+    border-bottom: 3px solid #222;
+    font-size: 1rem;
+    color: #222;
+    font-weight: 600;
+    text-align: center;
+}
+
+
+
+tbody td input{
+    background-color: transparent;
+    border: none;
+    outline: none;
+    text-align: center;
+    padding: 0px 5px;
+    height: 30px;
+    font-weight: 500;
+}
+
+.internetTable td:first-child input,
+.internetTable th:first-child input,
+.elecTable td:first-child input,
+.elecTable th:first-child input{
+    width: 60px;
+}
+
+tbody tr:nth-child(odd) {
+    background-color: #e1e1e1;
+}
+form{
+    width: 480px;
+    border: 1px solid #eaeaea;
+    margin: 5vh auto;
+    padding: 10px 20px;
+    box-shadow: 0px 0px 5px #dddddd;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+}
+form input{
+    outline: none;
+    width: 330px;
+    height: 35px;
+    font-size: 16px;
+    font-weight: 600;
+    padding-left: 5px;
+    border-radius: 3px;
+    border: 1px solid #9a9a9a;
+    margin: 0px 5px;
+}
+form button{
+    width: 95px;
+    height: 35px;
+    border-radius: 3px;
+    background-color: #ff8a00;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: .3s;
+    color: #fff;
+}
+
+form button:hover{
+    background-color: #ee7900;
+
+}
+
+.elecTable th:nth-child(-n+4),
+.elecTable td:nth-child(-n+4){
+    width: 100px;
+    background-color: #fff;
+}
+
+.internetTable th:nth-child(8),
+.internetTable td:nth-child(8){
+    background-color: yellow;
+}
+.internetTable th:nth-child(7),
+.internetTable td:nth-child(7){
+    background-color: #00ff00;
+}
+.internetTable th:nth-child(-n+7),
+.internetTable td:nth-child(-n+7) {
+    background-color: #fff;
+}
+
+
+.finBtn{
+    width: 50px;
+    height: 35px;
+    background-color: #6785ff;
+    color: #fff;
+}
+
+.tableContainer{
+    width: 100vw;
+    overflow-x: scroll;
+}
+div:has(table)::-webkit-scrollbar{
+    height: 10px;
+    background-color: #ccc;
+    border-radius: 10px;
+}
+div:has(table)::-webkit-scrollbar-thumb{
+    background: #6785ff;
+    border: 2px solid #aaa;
+    border-radius: 10px;
+
+}
+
+.copyTable{
+    margin: 25px auto;
+    border: 2px solid #222;
+    width: 40vw;
+}
+
+.copyTable td{
+    text-align: center;
+    padding: 5px 10px;
+}
+
+.tableTitle{
+    width: 100vw;
+    text-align: center;
+    margin: 10px 0px;
+}
+
+.total{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.valueStart{
+    border-left: 5px solid #222;
+}
+
+
+
+
+
+
+
+
+.selected{
+    background-color: #6785ff !important;
+    color: #fff;
+}

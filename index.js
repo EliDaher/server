@@ -1,56 +1,135 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
+const fs = require('fs');
+const https = require('https');
 
 const app = express();
-app.use(cors());
+
+// قراءة شهادة SSL ذاتية التوقيع
+const privateKey = fs.readFileSync('key.pem', 'utf8');
+const certificate = fs.readFileSync('cert.pem', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// السماح بالوصول من الشبكة المحلية
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
 app.use(express.json()); // لمعالجة بيانات JSON في الطلبات POST
+app.use(express.static('Public')); // تقديم الملفات الثابتة
+
+// إعداد المصادقة مع Google Sheets API
+const auth = new google.auth.GoogleAuth({
+    keyFile: "credentials.json",
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+});
+
+// تعريف المعرف الخاص بالجدول
+const spreadsheetId = "163LGBklaFvbMpcCgZtJhF25N6rKgRkAUzBX85GZ_ebU";
 
 // دالة لجلب البيانات من Google Sheets
 const getInvoiceData = async (searchTerm) => {
     try {
-        const auth = new google.auth.GoogleAuth({
-            keyFile: "credentials.json",
-            scopes: "https://www.googleapis.com/auth/spreadsheets",
-        });
-
+        console.log(searchTerm)
         const client = await auth.getClient();
         const googleSheets = google.sheets({ version: 'v4', auth: client });
-        const spreadsheetId = "163LGBklaFvbMpcCgZtJhF25N6rKgRkAUzBX85GZ_ebU";
 
-        // Fetch data from two sheets
-        const ranges = ["in2!A:ZZ", "invoice!A:ZZ"];
+        // Fetch data from both sheets
+        const ranges = ["invoice!A:ZZ"];
         const data = await Promise.all(ranges.map(range =>
             googleSheets.spreadsheets.values.get({ auth, spreadsheetId, range })
         ));
 
-        // Combine and process rows
+        // Combine rows from both sheets
         const rows = data.flatMap(response => response.data.values || []);
-        if (rows.length === 0) {
+        if (!rows || rows.length === 0) {
             return { error: "No data found in the sheets." };
         }
 
-        //الحصول على id المشترك
-        const searchId = rows.filter(row =>
+        // Find the `searchId` matching the searchTerm
+        const matchingRow = rows.find(row => 
             row.slice(0, 3).some(cell => cell === searchTerm)
-        )[0][0];
-
-        console.log(searchId)
-
-        // تصفية البيانات بناءً على مصطلح البحث
-        const matchingRows = rows.filter(row =>
-            row.slice(0, 3).some(cell => cell === searchId)
         );
 
-        return { data: matchingRows };
+        if (!matchingRow) {
+            return { error: "No matching data found for the given search term." };
+        }
+
+        const searchId = matchingRow[0]; // Assume the ID is in the first column
+
+        // Filter rows that match the `searchId`
+        const matchingRows = rows.filter((row, index) =>
+            row.slice(0, 3).some(cell => cell === searchId)
+        );
+        
+        return { 
+            data: matchingRows, 
+            originalRows: matchingRows.map((row, index) => rows.findIndex(originalRow => originalRow === row) + 1) // الحصول على الفهرس في المصفوفة الأصلية
+        };
+        
     } catch (error) {
         console.error("Error fetching data from Google Sheets:", error);
         return { error: "Failed to fetch data from Google Sheets." };
     }
 };
 
+
+// دالة لجلب البيانات من Google Sheets
+const getElecData = async (searchTerm) => {
+    try {
+        const client = await auth.getClient();
+        const googleSheets = google.sheets({ version: 'v4', auth: client });
+
+        // Fetch data from both sheets
+        const ranges = ["in2!A:ZZ"];
+        const data = await Promise.all(ranges.map(range =>
+            googleSheets.spreadsheets.values.get({ auth, spreadsheetId, range })
+        ));
+
+        // Combine rows from both sheets
+        const rows = data.flatMap(response => response.data.values || []);
+        if (!rows || rows.length === 0) {
+            return { error: "No data found in the sheets." };
+        }
+
+        // Find the `searchId` matching the searchTerm
+        const matchingRow = rows.find(row => 
+            row.slice(0, 4).some(cell => cell === searchTerm)
+        );
+
+        if (!matchingRow) {
+            return { error: "No matching data found for the given search term." };
+        }
+
+        const searchId = matchingRow[0]; // Assume the ID is in the first column
+
+        // Filter rows that match the `searchId`
+        const elecMatchingRows = rows.filter((row, index) =>
+            row.slice(0, 3).some(cell => cell === searchId)
+        );
+        
+        return { 
+            data: elecMatchingRows, 
+            originalRows: elecMatchingRows.map((row, index) => rows.findIndex(originalRow => originalRow === row) + 1) // الحصول على الفهرس في المصفوفة الأصلية
+        };
+        
+    } catch (error) {
+        console.error("Error fetching data from Google Sheets:", error);
+        return { error: "Failed to fetch data from Google Sheets." };
+    }
+};
+
+// مسار GET للجذر
+app.get('/', (req, res) => {
+    res.send('Welcome to the Express server!');
+});
+
 // مسار POST لاستقبال مصطلح البحث وجلب النتائج
-app.post('/submit', async (req, res) => {
+app.post('/internetSearch', async (req, res) => {
     const { PhNumber: searchTerm } = req.body; // استخراج مصطلح البحث
     console.log('Received search term:', searchTerm);
 
@@ -66,8 +145,94 @@ app.post('/submit', async (req, res) => {
     }
 
     // إرجاع النتائج إلى العميل
-    res.json({ matchingRows: result.data });
+    res.json({ matchingRows: result.data, originalRows: result.originalRows });
 });
 
-// بدء تشغيل الخادم
-app.listen(1337, () => console.log("Server running on port 1337"));
+
+// مسار POST لاستقبال مصطلح البحث وجلب النتائج
+app.post('/elecSearch', async (req, res) => {
+    const { PhNumber: searchTerm } = req.body; // استخراج مصطلح البحث
+    console.log('Received search term:', searchTerm);
+
+    if (!searchTerm) {
+        return res.status(400).json({ error: "Missing search term (PhNumber)." });
+    }
+
+    // جلب البيانات من Google Sheets
+    const result = await getElecData(searchTerm);
+
+    if (result.error) {
+        return res.status(500).json({ error: result.error });
+    }
+
+    // إرجاع النتائج إلى العميل
+    res.json({ elecMatchingRows: result.data, originalRows: result.originalRows });
+});
+
+
+
+// مسار POST لتحديث البيانات في Google Sheets
+app.post('/update', async (req, res) => {
+    const { row, col, value } = req.body;
+
+    try {
+        const client = await auth.getClient();
+        const googleSheets = google.sheets({ version: 'v4', auth: client });
+
+        const updateRequest = {
+            spreadsheetId,
+            range: `invoice!${getColumnLetter(col)}${row}`, // تحويل الرقم إلى الحرف المناسب
+            valueInputOption: "RAW",
+            resource: {
+                values: [[value]],
+            },
+        };
+
+        await googleSheets.spreadsheets.values.update(updateRequest);
+
+        res.json({ message: "Data updated successfully" });
+    } catch (error) {
+        console.error('Error updating data in Google Sheets:', error);
+        res.status(500).json({ error: "Failed to update data" });
+    }
+});
+
+app.post('/updateElec', async (req, res) => {
+    const { row, col, value } = req.body;
+
+    try {
+        const client = await auth.getClient();
+        const googleSheets = google.sheets({ version: 'v4', auth: client });
+
+        const updateRequest = {
+            spreadsheetId,
+            range: `in2!${getColumnLetter(col)}${row}`, // تحويل الرقم إلى الحرف المناسب
+            valueInputOption: "RAW",
+            resource: {
+                values: [[value]],
+            },
+        };
+
+        await googleSheets.spreadsheets.values.update(updateRequest);
+
+        res.json({ message: "Data updated successfully" });
+    } catch (error) {
+        console.error('Error updating data in Google Sheets:', error);
+        res.status(500).json({ error: "Failed to update data" });
+    }
+});
+
+// دالة لتحويل رقم العمود إلى الحرف المناسب في Google Sheets
+function getColumnLetter(col) {
+    let columnLetter = '';
+    while (col >= 0) {
+        columnLetter = String.fromCharCode((col % 26) + 65) + columnLetter;
+        col = Math.floor(col / 26) - 1;
+    }
+    return columnLetter;
+}
+
+// إنشاء خادم HTTPS
+https.createServer(credentials, app).listen(1337, '0.0.0.0', () => {
+    console.log('HTTPS server running');
+});
