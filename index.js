@@ -1,15 +1,10 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-const fs = require('fs');
-const https = require('https');
+
 
 const app = express();
 
-// قراءة شهادة SSL ذاتية التوقيع
-const privateKey = fs.readFileSync('key.pem', 'utf8');
-const certificate = fs.readFileSync('cert.pem', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
 
 // السماح بالوصول من الشبكة المحلية
 app.use(cors({
@@ -20,7 +15,6 @@ app.use(cors({
 }));
 
 app.use(express.json()); // لمعالجة بيانات JSON في الطلبات POST
-app.use(express.static('Public')); // تقديم الملفات الثابتة
 
 // إعداد المصادقة مع Google Sheets API
 const auth = new google.auth.GoogleAuth({
@@ -130,6 +124,7 @@ app.get('/', (req, res) => {
 
 // مسار POST لاستقبال مصطلح البحث وجلب النتائج
 app.post('/internetSearch', async (req, res) => {
+    console.log(req.body);
     const { PhNumber: searchTerm } = req.body; // استخراج مصطلح البحث
     console.log('Received search term:', searchTerm);
 
@@ -232,7 +227,7 @@ function getColumnLetter(col) {
     return columnLetter;
 }
 
-// إنشاء خادم HTTPS
-https.createServer(credentials, app).listen(1337, '0.0.0.0', () => {
-    console.log('HTTPS server running');
+const PORT = process.env.PORT || 1337;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
