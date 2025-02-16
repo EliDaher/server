@@ -1,6 +1,8 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
+import { ref, get, child } from "firebase/database";
+import { database } from '../firebaseConfig';
 
 
 const app = express();
@@ -237,6 +239,22 @@ function getColumnLetter(col) {
     }
     return columnLetter;
 }
+
+app.post('/UserLogin', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const dbRef = ref(database);
+        const snapshot = await get(child(dbRef, 'user')); 
+        const data = snapshot.val();
+        const usersList = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+
+        res.json({ user: usersList, username:username, password:password });
+    } catch (error) {
+        console.error('Error Firebase Login: ', error);
+        res.status(500).json({ error: "Failed to fetch data" });
+    }
+});
 
 const PORT = process.env.PORT || 1337;
 app.listen(PORT, () => {
