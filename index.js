@@ -2,7 +2,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 import { ref, get, child } from "firebase/database";
-import { database } from '../firebaseConfig';
+import { database } from './firebaseConfig';
 
 
 const app = express();
