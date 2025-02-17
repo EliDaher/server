@@ -1,8 +1,9 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-import { ref, get, child } from "firebase/database";
-import { database } from './firebaseConfig.js';
+const { ref, get, child } = require("firebase/database");
+const { database } = require('./firebaseConfig.js');
+
 
 
 const app = express();

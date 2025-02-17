@@ -1,6 +1,6 @@
 // src/firebaseConfig.js
-import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+const { initializeApp } = require("firebase/app");
+const { getDatabase } = require("firebase/database");
 
 // Firebase configuration
 const firebaseConfig = {
@@ -20,4 +20,4 @@ const app = initializeApp(firebaseConfig);
 // Initialize Realtime Database and get a reference to the service
 const database = getDatabase(app);
 
-export { database };
+module.exports = { database };
