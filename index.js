@@ -1,7 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-const { ref, get, child } = require("firebase/database");
+const { ref, get, child, query, orderByChild, equalTo } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 
 
@@ -245,12 +245,26 @@ app.post('/UserLogin', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const dbRef = ref(database);
-        const snapshot = await get(child(dbRef, 'user')); 
+        const dbRef = ref(database, 'user');
+        const searchQuery = query(dbRef, orderByChild("username"), equalTo(username));
+
+        const snapshot = await get(searchQuery);
+
+        // التحقق مما إذا كان المستخدم موجودًا
+        if (!snapshot.exists()) {
+            return res.status(401).json({ error: "User not found" });
+        }
+
         const data = snapshot.val();
         const usersList = Object.keys(data).map(key => ({ id: key, ...data[key] }));
 
-        res.json({ user: usersList, username:username, password:password });
+        // التحقق من كلمة المرور
+        const user = usersList.find(user => user.password === password);
+        if (!user) {
+            return res.status(401).json({ error: "Invalid password" });
+        }
+
+        res.json({ message: "Login successful", user });
     } catch (error) {
         console.error('Error Firebase Login: ', error);
         res.status(500).json({ error: "Failed to fetch data" });
