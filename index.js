@@ -1,7 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-const { ref, get, child, query, orderByChild, equalTo } = require("firebase/database");
+const { ref, get, child, query, orderByChild, equalTo, push } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 
 
@@ -270,6 +270,58 @@ app.post('/UserLogin', async (req, res) => {
         res.status(500).json({ error: "Failed to fetch data" });
     }
 });
+
+app.post("/addInvoice", async (req, res) => {
+    try {
+        const { amount, employee, details } = req.body;
+        const date = new Date().toISOString().split("T")[0];
+        const newInvoiceRef = db.ref(`dailyTotal/${date}/${employee}`).push();
+        await newInvoiceRef.set({
+            amount,
+            employee,
+            details,
+            timestamp: Date.now(),
+        });
+  
+    /*  // حساب المجموع الجديد لكل موظف
+      const snapshot = await db.ref(`invoices/${date}`).once("value");
+      const totalsByEmployee = {};
+      snapshot.forEach((child) => {
+        const invoice = child.val();
+        if (!totalsByEmployee[invoice.employee]) {
+          totalsByEmployee[invoice.employee] = 0;
+        }
+        totalsByEmployee[invoice.employee] += invoice.amount;
+      });
+  
+      // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
+      io.emit("update-employee-totals", totalsByEmployee);
+    */
+      res.status(200).json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const PORT = process.env.PORT || 1337;
 app.listen(PORT, () => {
