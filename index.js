@@ -275,7 +275,7 @@ app.post("/addInvoice", async (req, res) => {
     try {
         const { amount, employee, details } = req.body;
         const date = new Date().toISOString().split("T")[0];
-        const newInvoiceRef = db.ref(`dailyTotal/${date}/${employee}`).push();
+        const newInvoiceRef = database.ref(`dailyTotal/${date}/${employee}`).push();
         await newInvoiceRef.set({
             amount,
             employee,
