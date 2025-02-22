@@ -1,7 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-const { ref, get, child, query, orderByChild, equalTo, push } = require("firebase/database");
+const { ref, get, child, query, orderByChild, equalTo, push, set } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 
 
