@@ -6,6 +6,8 @@ const { database } = require('./firebaseConfig.js');
 const http = require('http');
 require('dotenv').config(); // تحميل متغيرات البيئة
 const { Server } = require("socket.io");
+const date = new Date().toISOString().split("T")[0];
+
 
 
 
@@ -286,63 +288,71 @@ app.post('/UserLogin', async (req, res) => {
     }
 });
 
+const calcTotalFund = async (doIo) => {
+    
+    // حساب المجموع الجديد لكل موظف
+      
+    const dbRef = ref(database, `dailyTotal/${date}`);
+    const snapshot = await get(dbRef);
+
+    const totalsByEmployee = [];
+      
+    if (snapshot.exists()) {
+        const totalsMap = {}; // تخزين المجاميع مؤقتًا قبل تحويلها إلى مصفوفة
+        snapshot.forEach((childSnapshot) => {
+          const invoice = Object.entries(childSnapshot.val());
+        
+          invoice.map(child =>{            
+            const employee = child[1].employee;
+            const amount = child[1].amount;
+            if (!totalsMap[employee]) {
+              totalsMap[employee] = 0;
+            }
+            totalsMap[employee] += amount;
+          })
+        });
+    
+        // تحويل المجاميع إلى مصفوفة بالصيغة المطلوبة
+        for (const [employee, total] of Object.entries(totalsMap)) {
+          totalsByEmployee.push({ employee, total });
+        }
+        if(doIo){
+            // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
+            io.emit("update-employee-totals", totalsByEmployee);
+        }else{
+            return totalsByEmployee;
+        }
+    }
+
+}
+
 app.post("/addInvoice", async (req, res) => {
     try {
         const { amount, employee, details } = req.body;
-        const date = new Date().toISOString().split("T")[0];
 
         const InvoiceRef = ref(database, `dailyTotal/${date}/${employee}`);
         const newInvoiceRef = push(InvoiceRef);
-        console.log("start newinv")
 
         await set(newInvoiceRef, {
             amount,
             employee,
             details,
-            timestamp: Date.now(),
+            timestamp: date,
         });
 
+        await calcTotalFund(true);
 
-  
-      // حساب المجموع الجديد لكل موظف
+        res.status(200).json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+});
 
 
+app.post("/getEmployeesFund", async (req, res) => {
+    try {
 
-      
-
-      const dbRef = ref(database, `dailyTotal/${date}`);
-      const snapshot = await get(dbRef);
-
-      const totalsByEmployee = [];
-      
-        if (snapshot.exists()) {
-            const totalsMap = {}; // تخزين المجاميع مؤقتًا قبل تحويلها إلى مصفوفة
-            snapshot.forEach((childSnapshot) => {
-              const invoice = Object.entries(childSnapshot.val());
-
-            
-              invoice.map(child =>{            
-                const employee = child[1].employee;
-                const amount = child[1].amount;
-
-                if (!totalsMap[employee]) {
-                  totalsMap[employee] = 0;
-                }
-
-                totalsMap[employee] += amount;
-              })
-            });
-        
-            // تحويل المجاميع إلى مصفوفة بالصيغة المطلوبة
-            for (const [employee, total] of Object.entries(totalsMap)) {
-              totalsByEmployee.push({ employee, total });
-            }
-        
-            // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
-            io.emit("update-employee-totals", totalsByEmployee);
-
-            res.status(200).json({ success: true });
-        }
+        res.status(200).json({ TotalFund : await calcTotalFund(false) });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
