@@ -325,17 +325,18 @@ app.post("/addInvoice", async (req, res) => {
           
               totalsMap[employee] += amount;
             });
-        }
         
-    // تحويل المجاميع إلى مصفوفة بالصيغة المطلوبة
-    for (const [employee, total] of Object.entries(totalsMap)) {
-      totalsByEmployee.push({ employee, total });
-    }
+
+            // تحويل المجاميع إلى مصفوفة بالصيغة المطلوبة
+            for (const [employee, total] of Object.entries(totalsMap)) {
+              totalsByEmployee.push({ employee, total });
+            }
   
-      // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
-      io.emit("update-employee-totals", totalsByEmployee);
-    
-      res.status(200).json({ success: true });
+            // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
+            io.emit("update-employee-totals", totalsByEmployee);
+
+            res.status(200).json({ success: true });
+        }
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
