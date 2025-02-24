@@ -308,16 +308,29 @@ app.post("/addInvoice", async (req, res) => {
 
       const dbRef = ref(database, `dailyTotal/${date}`);
       const snapshot = await get(dbRef);
-      console.log("end newinv")
 
-      const totalsByEmployee = {};
-      snapshot.forEach((child) => {
-        const invoice = child.val();
-        if (!totalsByEmployee[invoice.employee]) {
-          totalsByEmployee[invoice.employee] = 0;
+      const totalsByEmployee = [];
+        
+        if (snapshot.exists()) {
+            const totalsMap = {}; // تخزين المجاميع مؤقتًا قبل تحويلها إلى مصفوفة
+        
+            snapshot.forEach((childSnapshot) => {
+              const invoice = childSnapshot.val();
+              const employee = invoice.employee;
+              const amount = invoice.amount;
+            
+              if (!totalsMap[employee]) {
+                totalsMap[employee] = 0;
+              }
+          
+              totalsMap[employee] += amount;
+            });
         }
-        totalsByEmployee[invoice.employee] += invoice.amount;
-      });
+        
+    // تحويل المجاميع إلى مصفوفة بالصيغة المطلوبة
+    for (const [employee, total] of Object.entries(totalsMap)) {
+      totalsByEmployee.push({ employee, total });
+    }
   
       // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
       io.emit("update-employee-totals", totalsByEmployee);
