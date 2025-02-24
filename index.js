@@ -4,6 +4,7 @@ const cors = require('cors');
 const { ref, get, child, query, orderByChild, equalTo, push, set } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 const http = require('http');
+require('dotenv').config(); // تحميل متغيرات البيئة
 const { Server } = require("socket.io");
 
 
@@ -298,7 +299,7 @@ app.post("/addInvoice", async (req, res) => {
         });
   
       // حساب المجموع الجديد لكل موظف
-      const snapshot = await db.ref(`dailyTotal/${date}`)
+      const snapshot = await database.ref(`dailyTotal/${date}`)
       const totalsByEmployee = {};
       snapshot.forEach((child) => {
         const invoice = child.val();
