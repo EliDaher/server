@@ -303,7 +303,10 @@ app.post("/addInvoice", async (req, res) => {
         console.log("done")
   
       // حساب المجموع الجديد لكل موظف
-      const snapshot = await database.ref(`dailyTotal/${date}`)
+
+      const dbRef = ref(database, 'dailyTotal/${date}');
+      const snapshot = await get(dbRef);
+
       const totalsByEmployee = {};
       snapshot.forEach((child) => {
         const invoice = child.val();
