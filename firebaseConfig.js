@@ -1,7 +1,7 @@
 // src/firebaseConfig.js
 const { initializeApp } = require("firebase/app");
 const { getDatabase } = require("firebase/database");
-// require('dotenv').config(); // تحميل متغيرات البيئة
+require('dotenv').config(); // تحميل متغيرات البيئة
 
 
 // Firebase configuration

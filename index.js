@@ -4,7 +4,7 @@ const cors = require('cors');
 const { ref, get, child, query, orderByChild, equalTo, push, set } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 const http = require('http');
-// require('dotenv').config(); // تحميل متغيرات البيئة
+require('dotenv').config(); // تحميل متغيرات البيئة
 const { Server } = require("socket.io");
 
 
@@ -293,6 +293,7 @@ app.post("/addInvoice", async (req, res) => {
 
         const InvoiceRef = ref(database, `dailyTotal/${date}/${employee}`);
         const newInvoiceRef = push(InvoiceRef);
+        console.log("start newinv")
 
         await set(newInvoiceRef, {
             amount,
@@ -300,12 +301,14 @@ app.post("/addInvoice", async (req, res) => {
             details,
             timestamp: Date.now(),
         });
-        console.log("done")
+
+
   
       // حساب المجموع الجديد لكل موظف
 
-      const dbRef = ref(database, 'dailyTotal/${date}');
+      const dbRef = ref(database, `dailyTotal/${date}`);
       const snapshot = await get(dbRef);
+      console.log("end newinv")
 
       const totalsByEmployee = {};
       snapshot.forEach((child) => {
@@ -323,7 +326,7 @@ app.post("/addInvoice", async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  });
+});
 
 
 
