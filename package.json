@@ -17,7 +17,8 @@
     "firebase": "^11.3.1",
     "firebase-admin": "^13.1.0",
     "gaxios": "^6.7.1",
-    "googleapis": "^144.0.0"
+    "googleapis": "^144.0.0",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

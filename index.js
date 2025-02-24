@@ -3,12 +3,23 @@ const { google } = require('googleapis');
 const cors = require('cors');
 const { ref, get, child, query, orderByChild, equalTo, push, set } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
+const http = require('http');
+const { Server } = require("socket.io");
+
 
 
 
 const app = express();
 
-
+const server = http.createServer(app); // Create HTTP server
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true
+    }
+});
 // السماح بالوصول من الشبكة المحلية
 app.use(cors({
     origin: '*',
@@ -286,8 +297,8 @@ app.post("/addInvoice", async (req, res) => {
             timestamp: Date.now(),
         });
   
-    /*  // حساب المجموع الجديد لكل موظف
-      const snapshot = await db.ref(`invoices/${date}`).once("value");
+      // حساب المجموع الجديد لكل موظف
+      const snapshot = await db.ref(`dailyTotal/${date}`)
       const totalsByEmployee = {};
       snapshot.forEach((child) => {
         const invoice = child.val();
@@ -299,7 +310,7 @@ app.post("/addInvoice", async (req, res) => {
   
       // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
       io.emit("update-employee-totals", totalsByEmployee);
-    */
+    
       res.status(200).json({ success: true });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -327,6 +338,6 @@ app.post("/addInvoice", async (req, res) => {
 
 
 const PORT = process.env.PORT || 1337;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
