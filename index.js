@@ -333,7 +333,7 @@ app.post("/addInvoice", async (req, res) => {
             }
   
             // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
-            io.emit("update-employee-totals", totalsByEmployee);
+            io.emit("update-employee-totals", totalsByEmployee, snapshot.val());
 
             res.status(200).json({ success: true });
         }
