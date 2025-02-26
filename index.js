@@ -6,7 +6,6 @@ const { database } = require('./firebaseConfig.js');
 const http = require('http');
 require('dotenv').config(); // تحميل متغيرات البيئة
 const { Server } = require("socket.io");
-const date = new Date().toISOString().split("T")[0];
 
 
 
@@ -291,7 +290,8 @@ app.post('/UserLogin', async (req, res) => {
 const calcTotalFund = async (doIo) => {
     
     // حساب المجموع الجديد لكل موظف
-      
+    const date = new Date().toISOString().split("T")[0];
+    
     const dbRef = ref(database, `dailyTotal/${date}`);
     const snapshot = await get(dbRef);
 
@@ -329,7 +329,8 @@ const calcTotalFund = async (doIo) => {
 app.post("/addInvoice", async (req, res) => {
     try {
         const { amount, employee, details } = req.body;
-
+      
+        const date = new Date().toISOString().split("T")[0];
         const InvoiceRef = ref(database, `dailyTotal/${date}/${employee}`);
         const newInvoiceRef = push(InvoiceRef);
 
@@ -354,7 +355,7 @@ app.post("/getEmployeesFund", async (req, res) => {
 
         res.status(200).json({ TotalFund : await calcTotalFund(false) });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
