@@ -316,12 +316,17 @@ const calcTotalFund = async (doIo) => {
         for (const [employee, total] of Object.entries(totalsMap)) {
           totalsByEmployee.push({ employee, total });
         }
+
+
+
         if(doIo){
             // إرسال التحديثات لحظيًا لكل العملاء المتصلين (المدير والموظفين)
             io.emit("update-employee-totals", totalsByEmployee);
         }else{
             return totalsByEmployee;
         }
+
+
     }
 
 }
@@ -358,6 +363,54 @@ app.post("/getEmployeesFund", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+const getEmployeeBalanceTable = async (username) => {
+
+    const date = new Date().toISOString().split("T")[0];
+    const dbRef = ref(database);
+
+    if(username){
+
+        // قائمة الفواتير للموظف 
+        const snapshot = await get(child(dbRef, `dailyTotal/${date}/${username}`)); 
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const invoiceList = Object.keys(data).map(key => ({ ...data[key] }));
+        } else {
+            console.log("No data available");
+        }   
+
+        return invoiceList;
+    } else{
+
+        // قائمة الفواتير لكل الموظفين        
+        const snapshot = await get(child(dbRef, `dailyTotal/${date}`)); 
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const invoiceList = Object.keys(data).map(key => ({ ...data[key] }));
+        } else {
+            console.log("No data available");
+        }   
+
+        return invoiceList;
+    }
+
+    
+}
+
+app.post("/getEmployeeBalance", async (req, res) => {
+    try {
+
+        const { username } = req.body;
+        console.log(username)
+
+        res.status(200).json({ BalanceTable : await getEmployeeBalanceTable(username) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 
 
 
