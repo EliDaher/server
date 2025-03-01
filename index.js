@@ -365,47 +365,42 @@ app.post("/getEmployeesFund", async (req, res) => {
 });
 
 const getEmployeeBalanceTable = async (username) => {
-
     const date = new Date().toISOString().split("T")[0];
     const dbRef = ref(database);
+    let invoiceList = []; // تأكد من أن القائمة معرفة دائمًا
 
-    if(username){
-
-        // قائمة الفواتير للموظف 
-        const snapshot = await get(child(dbRef, `dailyTotal/${date}/${username}`)); 
+    if (username) {
+        // قائمة الفواتير للموظف
+        const snapshot = await get(child(dbRef, `dailyTotal/${date}/${username}`));
         if (snapshot.exists()) {
-          const data = snapshot.val();
-          const invoiceList = Object.keys(data).map(key => ({ ...data[key] }));
+            const data = snapshot.val();
+            invoiceList = Object.keys(data).map(key => ({ ...data[key] }));
         } else {
-            console.log("No data available");
-        }   
-
-        return invoiceList;
-    } else{
-
+            console.log("No data available for", username);
+        }
+    } else {
         // قائمة الفواتير لكل الموظفين        
-        const snapshot = await get(child(dbRef, `dailyTotal/${date}`)); 
+        const snapshot = await get(child(dbRef, `dailyTotal/${date}`));
         if (snapshot.exists()) {
-          const data = snapshot.val();
-          const invoiceList = Object.keys(data).map(key => ({ ...data[key] }));
+            const data = snapshot.val();
+            invoiceList = Object.keys(data).map(key => ({ ...data[key] }));
         } else {
-            console.log("No data available");
-        }   
-
-        return invoiceList;
+            console.log("No data available for all employees");
+        }
     }
 
-    
-}
-
+    return invoiceList;
+};
 app.post("/getEmployeeBalance", async (req, res) => {
     try {
-
+        console.log("Received body:", req.body); // تحقق من البيانات المستقبلة
         const { username } = req.body;
-        console.log(username)
 
-        res.status(200).json({ BalanceTable : await getEmployeeBalanceTable(username) });
+        const balanceTable = await getEmployeeBalanceTable(username);
+        res.status(200).json({ BalanceTable: balanceTable });
+
     } catch (error) {
+        console.error("Error:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
