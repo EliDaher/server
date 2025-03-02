@@ -407,9 +407,8 @@ app.post("/getEmployeeBalance", async (req, res) => {
     }
 });
 
-cron.schedule('*/2 * * * *', async () => {
-    console.log("hi")
-/*cron.schedule("0 0 1 * *", async () => {
+
+cron.schedule("0 0 1 * *", async () => {
     try {
       const subscribersRef = database.ref("Subscribers");
       const invoicesRef = database.ref("Invoices");
@@ -450,7 +449,7 @@ cron.schedule('*/2 * * * *', async () => {
   
     } catch (error) {
       console.error(" خطأ أثناء إنشاء الفواتير:", error);
-    }*/
+    }
   }, {
     scheduled: true,
     timezone: "Asia/Damascus"
