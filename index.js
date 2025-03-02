@@ -408,9 +408,8 @@ app.post("/getEmployeeBalance", async (req, res) => {
 });
 
 
-//cron.schedule("0 0 1 * *", async () => {
-    cron.schedule('*/10 * * * *', async () => {
-
+cron.schedule("0 0 1 * *", async () => {
+    
     try {
       const subscribersRef = database.ref("Subscribers");
       const invoicesRef = database.ref("Invoices");
