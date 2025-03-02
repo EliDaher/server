@@ -6,6 +6,8 @@ const { database } = require('./firebaseConfig.js');
 const http = require('http');
 require('dotenv').config(); // تحميل متغيرات البيئة
 const { Server } = require("socket.io");
+const cron = require("node-cron");
+
 
 
 
@@ -405,10 +407,54 @@ app.post("/getEmployeeBalance", async (req, res) => {
     }
 });
 
-
-
-
-
+cron.schedule('*/2 * * * *', async () => {
+    console.log("hi")
+/*cron.schedule("0 0 1 * *", async () => {
+    try {
+      const subscribersRef = database.ref("Subscribers");
+      const invoicesRef = database.ref("Invoices");
+  
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const invoiceDate = `${year}-${month}-01`;
+  
+      const snapshot = await subscribersRef.once("value");
+      const subscribers = snapshot.val();
+  
+      if (!subscribers) {
+        console.log(" لا يوجد مشتركين!");
+        return;
+      }
+  
+      const updates = {};
+  
+      Object.keys(subscribers).forEach((userId) => {
+        const subscriber = subscribers[userId];
+  
+        if (subscriber.monthlyFee) {
+          const invoiceId = invoicesRef.push().key; // 🔹 إنشاء معرف فريد لكل فاتورة
+          updates[`Invoices/${invoiceId}`] = {
+            Amount: String(subscriber.monthlyFee),
+            Date: invoiceDate,
+            Details: " فاتورة شهر " + month,
+            InvoiceID: invoiceId, // تخزين نفس المعرف داخل الفاتورة
+            SubscriberID: String(userId),
+            id: invoiceId
+          };
+        }
+      });
+  
+      await database.ref().update(updates);
+      console.log(" تم إنشاء الفواتير بنجاح!");
+  
+    } catch (error) {
+      console.error(" خطأ أثناء إنشاء الفواتير:", error);
+    }*/
+  }, {
+    scheduled: true,
+    timezone: "Asia/Damascus"
+  });
 
 
 
