@@ -308,7 +308,7 @@ const calcTotalFund = async (doIo) => {
             if (!totalsMap[employee]) {
               totalsMap[employee] = 0;
             }
-            totalsMap[employee] += amount;
+            totalsMap[employee] += Number(amount);
           })
         });
     
