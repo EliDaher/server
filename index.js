@@ -55,7 +55,8 @@ const auth = new google.auth.GoogleAuth({
 });
 
 // تعريف المعرف الخاص بالجدول
-const spreadsheetId = "163LGBklaFvbMpcCgZtJhF25N6rKgRkAUzBX85GZ_ebU";
+//التجريب   const spreadsheetId = "163LGBklaFvbMpcCgZtJhF25N6rKgRkAUzBX85GZ_ebU";
+const spreadsheetId = "1ynr5b0Y7TO7amTAo2yySs9P7bmgGr_4P4eMJDUPUqtU";
 
 // دالة لجلب البيانات من Google Sheets
 const getInvoiceData = async (searchTerm) => {
@@ -65,7 +66,7 @@ const getInvoiceData = async (searchTerm) => {
         const googleSheets = google.sheets({ version: 'v4', auth: client });
 
         // Fetch data from both sheets
-        const ranges = ["invoice!A:ZZ"];
+        const ranges = ["NET!A:ZZ"];
         const data = await Promise.all(ranges.map(range =>
             googleSheets.spreadsheets.values.get({ auth, spreadsheetId, range })
         ));
@@ -111,7 +112,7 @@ const getElecData = async (searchTerm) => {
         const googleSheets = google.sheets({ version: 'v4', auth: client });
 
         // Fetch data from both sheets
-        const ranges = ["in2!A:ZZ"];
+        const ranges = ["كهربا و ماء!A:ZZ"];
         const data = await Promise.all(ranges.map(range =>
             googleSheets.spreadsheets.values.get({ auth, spreadsheetId, range })
         ));
@@ -208,7 +209,7 @@ app.post('/update', async (req, res) => {
 
         const updateRequest = {
             spreadsheetId,
-            range: `invoice!${getColumnLetter(col)}${row}`, // تحويل الرقم إلى الحرف المناسب
+            range: `NET!${getColumnLetter(col)}${row}`, // تحويل الرقم إلى الحرف المناسب
             valueInputOption: "RAW",
             resource: {
                 values: [[value]],
@@ -233,7 +234,7 @@ app.post('/updateElec', async (req, res) => {
 
         const updateRequest = {
             spreadsheetId,
-            range: `in2!${getColumnLetter(col)}${row}`, // تحويل الرقم إلى الحرف المناسب
+            range: `كهربا و ماء!${getColumnLetter(col)}${row}`, // تحويل الرقم إلى الحرف المناسب
             valueInputOption: "RAW",
             resource: {
                 values: [[value]],
