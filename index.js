@@ -198,8 +198,6 @@ app.post('/elecSearch', async (req, res) => {
 });
 
 
-
-
 const getCombinedData = async (searchTerm) => {
     try {
         console.log(`Searching for: ${searchTerm}`);
@@ -213,10 +211,15 @@ const getCombinedData = async (searchTerm) => {
         ];
 
         const data = await Promise.all(ranges.map(async ({ name, range }) => {
-            const response = await googleSheets.spreadsheets.values.get({
-                auth, spreadsheetId, range
-            });
-            return { name, rows: response.data.values || [] };
+            try {
+                const response = await googleSheets.spreadsheets.values.get({
+                    auth, spreadsheetId, range
+                });
+                return { name, rows: response.data.values || [] };
+            } catch (error) {
+                console.error(`Error fetching data from sheet ${name}:`, error);
+                return { name, rows: [] };
+            }
         }));
 
         let allRows = [];
@@ -230,27 +233,30 @@ const getCombinedData = async (searchTerm) => {
             return { error: "No data found in the sheets." };
         }
 
-        const matchingRow = allRows.find(({ row }) =>
-            row.slice(0, 3).some(cell => cell === searchTerm)
+        // البحث عن جميع الصفوف التي تحتوي على searchTerm
+        const matchingRows = allRows.filter(({ row }) =>
+            row.some(cell => cell && cell.toString().includes(searchTerm))
         );
 
-        if (!matchingRow) {
+        if (matchingRows.length === 0) {
             return { error: "No matching data found for the given search term." };
         }
 
-        const searchId = matchingRow.row[0];
+        // استخراج جميع القيم الفريدة التي تم العثور عليها في العمود الأول
+        const searchIds = [...new Set(matchingRows.map(({ row }) => row[0]))];
 
-        const matchingRows = allRows.filter(({ row }) =>
-            row.slice(0, 3).some(cell => cell === searchId)
+        // البحث عن جميع الصفوف التي تحتوي على أحد searchIds
+        const finalMatchingRows = allRows.filter(({ row }) =>
+            searchIds.includes(row[0])
         );
 
-        // **إنشاء 4 مصفوفات منفصلة**
+        // تصنيف البيانات إلى فئات منفصلة
         const elecMatchingRows = [];
         const elecOriginalRows = [];
         const internetMatchingRows = [];
         const internetOriginalRows = [];
 
-        matchingRows.forEach(({ row, sheet, rowIndex }) => {
+        finalMatchingRows.forEach(({ row, sheet, rowIndex }) => {
             if (sheet === "NET") {
                 internetMatchingRows.push(row);
                 internetOriginalRows.push(rowIndex);
@@ -266,14 +272,13 @@ const getCombinedData = async (searchTerm) => {
             internetMatchingRows,
             internetOriginalRows
         };
-
     } catch (error) {
         console.error("Error fetching data from Google Sheets:", error);
         return { error: "Failed to fetch data from Google Sheets." };
     }
 };
 
-// **إنشاء مسار البحث**
+// إنشاء مسار البحث
 app.post('/search', async (req, res) => {
     const { PhNumber: searchTerm } = req.body;
     console.log('Received search term:', searchTerm);
@@ -285,7 +290,7 @@ app.post('/search', async (req, res) => {
     const result = await getCombinedData(searchTerm);
 
     if (result.error) {
-        return res.status(500).json({ error: result.error });
+        return res.status(404).json({ error: result.error });
     }
 
     res.json({
@@ -295,8 +300,6 @@ app.post('/search', async (req, res) => {
         internetOriginalRows: result.internetOriginalRows
     });
 });
-
-
 
 
 
