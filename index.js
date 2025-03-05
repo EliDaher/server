@@ -628,30 +628,31 @@ cron.schedule("55 23 * * *", async () => {
 
 const getEveryBalance = async () => {
     const dbRef = ref(database);
-    let invoiceList = [];
+    let balanceList = [];
 
-    const snapshot = await get(child(dbRef, `dailyBalance`));
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        Object.values(data).forEach(day => {
-            invoiceList.push(...Object.values(day));
-        });
-    } else {
-        console.log("No data available");
+    try {
+        const snapshot = await get(child(dbRef, `dailyBalance`));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            balanceList = Object.values(data); // تحويل البيانات إلى قائمة ككائنات
+        } else {
+            console.log("لا توجد بيانات متاحة في dailyBalance.");
+        }
+    } catch (error) {
+        console.error("حدث خطأ أثناء جلب بيانات الأرصدة:", error.message);
     }
 
-    return invoiceList;
+    return balanceList;
 };
 
-
 app.post('/getEveryBalance', async (req, res) => {
-    
-    const everyBalance = await getEveryBalance();
-
-    res.status(200).json({ everyBalance: everyBalance });
-})
-
-
+    try {
+        const everyBalance = await getEveryBalance();
+        res.status(200).json({ everyBalance });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 
