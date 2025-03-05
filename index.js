@@ -199,6 +199,7 @@ app.post('/elecSearch', async (req, res) => {
 
 
 
+
 const getCombinedData = async (searchTerm) => {
     try {
         console.log(`Searching for: ${searchTerm}`);
@@ -206,13 +207,11 @@ const getCombinedData = async (searchTerm) => {
         const client = await auth.getClient();
         const googleSheets = google.sheets({ version: 'v4', auth: client });
 
-        // تحديد الأوراق التي نبحث فيها
         const ranges = [
             { name: "NET", range: "NET!A:ZZ" },
             { name: "كهربا و ماء", range: "كهربا و ماء!A:ZZ" }
         ];
 
-        // تحميل البيانات من الأوراق
         const data = await Promise.all(ranges.map(async ({ name, range }) => {
             const response = await googleSheets.spreadsheets.values.get({
                 auth, spreadsheetId, range
@@ -220,7 +219,6 @@ const getCombinedData = async (searchTerm) => {
             return { name, rows: response.data.values || [] };
         }));
 
-        // دمج البيانات مع الاحتفاظ باسم الورقة وأرقام الصفوف
         let allRows = [];
         data.forEach(({ name, rows }) => {
             rows.forEach((row, index) => {
@@ -232,8 +230,7 @@ const getCombinedData = async (searchTerm) => {
             return { error: "No data found in the sheets." };
         }
 
-        // البحث عن الصف الذي يحتوي على `searchTerm`
-        const matchingRow = allRows.find(({ row }) => 
+        const matchingRow = allRows.find(({ row }) =>
             row.slice(0, 3).some(cell => cell === searchTerm)
         );
 
@@ -241,17 +238,33 @@ const getCombinedData = async (searchTerm) => {
             return { error: "No matching data found for the given search term." };
         }
 
-        const searchId = matchingRow.row[0]; // نفترض أن الـ ID موجود في العمود الأول
+        const searchId = matchingRow.row[0];
 
-        // جلب كل الصفوف التي تحتوي على نفس الـ ID
         const matchingRows = allRows.filter(({ row }) =>
             row.slice(0, 3).some(cell => cell === searchId)
         );
 
-        return { 
-            data: matchingRows.map(({ row, sheet, rowIndex }) => ({
-                row, sheet, rowIndex // الاحتفاظ بالمصدر ورقم الصف الأصلي
-            }))
+        // **إنشاء 4 مصفوفات منفصلة**
+        const elecMatchingRows = [];
+        const elecOriginalRows = [];
+        const internetMatchingRows = [];
+        const internetOriginalRows = [];
+
+        matchingRows.forEach(({ row, sheet, rowIndex }) => {
+            if (sheet === "NET") {
+                internetMatchingRows.push(row);
+                internetOriginalRows.push(rowIndex);
+            } else {
+                elecMatchingRows.push(row);
+                elecOriginalRows.push(rowIndex);
+            }
+        });
+
+        return {
+            elecMatchingRows,
+            elecOriginalRows,
+            internetMatchingRows,
+            internetOriginalRows
         };
 
     } catch (error) {
@@ -269,28 +282,19 @@ app.post('/search', async (req, res) => {
         return res.status(400).json({ error: "Missing search term (PhNumber)." });
     }
 
-    // استدعاء البحث الموحد في الورقتين
     const result = await getCombinedData(searchTerm);
 
     if (result.error) {
         return res.status(500).json({ error: result.error });
     }
 
-    const ElecRows = [];
-    const InternetRows = [];
-
-    result.data.forEach(row => {
-        if (row.sheet === "NET") {  
-            InternetRows.push(row);
-        } else {
-            ElecRows.push(row);
-        }           
+    res.json({
+        elecMatchingRows: result.elecMatchingRows,
+        elecOriginalRows: result.elecOriginalRows,
+        internetMatchingRows: result.internetMatchingRows,
+        internetOriginalRows: result.internetOriginalRows
     });
-
-    // إرجاع البيانات مع رقم الصف الأصلي واسم الورقة
-    res.json({ elecMatchingRows: ElecRows, internetMatchingRows: InternetRows });
 });
-
 
 
 
