@@ -499,6 +499,7 @@ const getEmployeeBalanceTable = async (username) => {
 
     return invoiceList;
 };
+
 app.post("/getEmployeeBalance", async (req, res) => {
     try {
         console.log("Received body:", req.body); // تحقق من البيانات المستقبلة
@@ -557,12 +558,98 @@ cron.schedule("0 0 1 * *", async () => {
     } catch (error) {
       console.error(" خطأ أثناء إنشاء الفواتير:", error);
     }
-  }, {
+}, {
     scheduled: true,
     timezone: "Asia/Damascus"
-  });
+});
 
 
+
+const getTotalDailyInvoices = async () => {
+    try {
+        const date = new Date().toISOString().split("T")[0]; // تاريخ اليوم
+        const dbRef = ref(database);
+        let totalAmount = 0;
+
+        // الحصول على جميع بيانات اليوم
+        const snapshot = await get(child(dbRef, `dailyTotal/${date}`));
+
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            
+            // التكرار على جميع الموظفين وجمع قيم الفواتير
+            Object.keys(data).forEach(employee => {
+                Object.values(data[employee]).forEach(invoice => {
+                    totalAmount += invoice.amount || 0;
+                });
+            });
+
+        } else {
+            console.log("لا توجد بيانات متاحة لليوم:", date);
+        }
+
+        return totalAmount;
+    } catch (error) {
+        console.error("حدث خطأ أثناء حساب إجمالي الفواتير:", error.message);
+        return 0;
+    }
+};
+
+cron.schedule("55 23 * * *", async () => {
+    
+    try {      
+
+        console.log("🔄 بدء حساب إجمالي الفواتير اليومية...");
+
+        const balanceTotal = await getTotalDailyInvoices();
+        const date = new Date().toISOString().split("T")[0];
+
+        const insertedData = {
+            date: date,
+            total: balanceTotal,
+        };
+
+        // حفظ البيانات في Firebase
+        const dailyTotalRef = ref(database, `dailyBalance/${date}`);
+        await set(dailyTotalRef, insertedData);
+
+        console.log(`✅ تم حفظ إجمالي الفواتير اليومية (${balanceTotal}) ليوم ${date}`);
+        
+
+    } catch (error) {
+        console.log(error)
+    }
+
+}, {
+    scheduled: true,
+    timezone: "Asia/Damascus"
+})
+
+
+const getEveryBalance = async () => {
+    const dbRef = ref(database);
+    let invoiceList = [];
+
+    const snapshot = await get(child(dbRef, `dailyBalance`));
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.values(data).forEach(day => {
+            invoiceList.push(...Object.values(day));
+        });
+    } else {
+        console.log("No data available");
+    }
+
+    return invoiceList;
+};
+
+
+app.post('/getEveryBalance', async (req, res) => {
+    
+    const everyBalance = await getEveryBalance();
+
+    res.status(200).json({ everyBalance: everyBalance });
+})
 
 
 
