@@ -199,6 +199,107 @@ app.post('/elecSearch', async (req, res) => {
 
 
 
+const getCombinedData = async (searchTerm) => {
+    try {
+        console.log(`Searching for: ${searchTerm}`);
+
+        const client = await auth.getClient();
+        const googleSheets = google.sheets({ version: 'v4', auth: client });
+
+        // تحديد الأوراق التي نبحث فيها
+        const ranges = [
+            { name: "NET", range: "NET!A:ZZ" },
+            { name: "كهربا و ماء", range: "كهربا و ماء!A:ZZ" }
+        ];
+
+        // تحميل البيانات من الأوراق
+        const data = await Promise.all(ranges.map(async ({ name, range }) => {
+            const response = await googleSheets.spreadsheets.values.get({
+                auth, spreadsheetId, range
+            });
+            return { name, rows: response.data.values || [] };
+        }));
+
+        // دمج البيانات مع الاحتفاظ باسم الورقة وأرقام الصفوف
+        let allRows = [];
+        data.forEach(({ name, rows }) => {
+            rows.forEach((row, index) => {
+                allRows.push({ row, sheet: name, rowIndex: index + 1 }); // نضيف 1 لأن الفهرس يبدأ من 0
+            });
+        });
+
+        if (!allRows.length) {
+            return { error: "No data found in the sheets." };
+        }
+
+        // البحث عن الصف الذي يحتوي على `searchTerm`
+        const matchingRow = allRows.find(({ row }) => 
+            row.slice(0, 3).some(cell => cell === searchTerm)
+        );
+
+        if (!matchingRow) {
+            return { error: "No matching data found for the given search term." };
+        }
+
+        const searchId = matchingRow.row[0]; // نفترض أن الـ ID موجود في العمود الأول
+
+        // جلب كل الصفوف التي تحتوي على نفس الـ ID
+        const matchingRows = allRows.filter(({ row }) =>
+            row.slice(0, 3).some(cell => cell === searchId)
+        );
+
+        return { 
+            data: matchingRows.map(({ row, sheet, rowIndex }) => ({
+                row, sheet, rowIndex // الاحتفاظ بالمصدر ورقم الصف الأصلي
+            }))
+        };
+
+    } catch (error) {
+        console.error("Error fetching data from Google Sheets:", error);
+        return { error: "Failed to fetch data from Google Sheets." };
+    }
+};
+
+// **إنشاء مسار البحث**
+app.post('/search', async (req, res) => {
+    const { PhNumber: searchTerm } = req.body;
+    console.log('Received search term:', searchTerm);
+
+    if (!searchTerm) {
+        return res.status(400).json({ error: "Missing search term (PhNumber)." });
+    }
+
+    // استدعاء البحث الموحد في الورقتين
+    const result = await getCombinedData(searchTerm);
+
+    if (result.error) {
+        return res.status(500).json({ error: result.error });
+    }
+
+    const ElecRows = [];
+    const InternetRows = [];
+
+    result.data.forEach(row => {
+        if (row.sheet === "NET") {  
+            InternetRows.push(row);
+        } else {
+            ElecRows.push(row);
+        }           
+    });
+
+    // إرجاع البيانات مع رقم الصف الأصلي واسم الورقة
+    res.json({ elecMatchingRows: ElecRows, internetMatchingRows: InternetRows });
+});
+
+
+
+
+
+
+
+
+
+
 // مسار POST لتحديث البيانات في Google Sheets
 app.post('/update', async (req, res) => {
     const { row, col, value } = req.body;
