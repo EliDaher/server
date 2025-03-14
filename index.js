@@ -451,7 +451,7 @@ app.post("/addInvoice", async (req, res) => {
         const newInvoiceRef = push(InvoiceRef);
 
         await set(newInvoiceRef, {
-            amount,
+            amount: Number(amount),
             employee,
             details,
             timestamp: date,
@@ -583,7 +583,7 @@ const getTotalDailyInvoices = async () => {
             // التكرار على جميع الموظفين وجمع قيم الفواتير
             Object.keys(data).forEach(employee => {
                 Object.values(data[employee]).forEach(invoice => {
-                    totalAmount += invoice.amount || 0;
+                    totalAmount += Number(invoice.amount) || 0;
                 });
             });
 
