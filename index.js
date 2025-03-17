@@ -1,7 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-const { ref, get, child, query, orderByChild, equalTo, push, set } = require("firebase/database");
+const { ref, get, child, query, orderByChild, equalTo, push, set, limitToLast } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 const http = require('http');
 require('dotenv').config(); // تحميل متغيرات البيئة
@@ -656,6 +656,69 @@ app.post('/getEveryBalance', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+const getLast5gBalance = async () => {
+    try {
+        const paymentsRef = query(ref(database, "Payments"), orderByChild("PaymentID"), limitToLast(15));
+        const snapshot = await get(paymentsRef);
+
+        if (snapshot.exists()) {
+            const paymentsData = snapshot.val();
+            const paymentsArray = Object.values(paymentsData);
+
+            const promises = paymentsArray.map(async (payment) => {
+                const subscriberID = payment.SubscriberID;
+                const subscribersRef = query(ref(database, "Subscribers"), orderByChild("id"), equalTo(Number(subscriberID)));
+                const subSnapshot = await get(subscribersRef);
+
+                if (subSnapshot.exists()) {
+                    const subscriberData = Object.values(subSnapshot.val())[0];
+
+                    return {
+                        name: subscriberData.Name,
+                        amount: payment.Amount,
+                        details: payment.Details,
+                        date: payment.Date
+                    };
+                } else {
+                    return {
+                        name: "غير معروف",
+                        amount: payment.Amount,
+                        details: payment.Details,
+                        date: payment.Date
+                    };
+                }
+            });
+
+            return await Promise.all(promises);
+        } else {
+            return [];
+        }
+    } catch (error) {
+        console.error("حدث خطأ:", error);
+        throw new Error("خطأ في جلب البيانات");
+    }
+};
+
+app.post('/getLast5GBalace', async (req, res) => {
+
+    try {
+        const data = await getLast5gBalance();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ message: "خطأ في السيرفر", error: error.message });
+    }
+
+})
+
+
+
+
+
+
+
+
 
 
 
