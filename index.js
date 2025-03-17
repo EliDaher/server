@@ -701,7 +701,7 @@ const getLast5gBalance = async () => {
     }
 };
 
-app.post('/getLast5GBalace', async (req, res) => {
+app.GET('/getLast5GBalace', async (req, res) => {
 
     try {
         const data = await getLast5gBalance();
