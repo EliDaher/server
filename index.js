@@ -712,8 +712,31 @@ app.get('/getLast5GBalance', async (req, res) => {
 
 })
 
+app.get('/getDealerCustomers', async (req, res) => {
+  const { dealer } = req.query; // استقبال المتغير من الواجهة الأمامية
 
+  if (!dealer) {
+    return res.status(400).json({ error: 'Dealer parameter is required' });
+  }
 
+  try {
+    const dbRef = ref(database);
+    const snapshot = await get(child(dbRef, 'Subscribers'));
+
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      const usersList = Object.keys(data)
+        .map(key => ({ id: key, ...data[key] }))
+        .filter(user => user.dealer === dealer);
+
+      res.json(usersList);
+    } else {
+      res.status(404).json({ error: 'No data available' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error reading data: ' + error.message });
+  }
+});
 
 
 
