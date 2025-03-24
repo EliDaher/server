@@ -739,6 +739,40 @@ app.get('/getDealerCustomers', async (req, res) => {
 });
 
 
+app.post("/addWifiExpenses", async (req, res) => {
+    try {
+        const date = new Date().toISOString().split("T")[0];
+        const { amount, employee, details } = req.body;
+
+        // التحقق من المدخلات
+        if (!amount || isNaN(amount) || amount <= 0 || !employee.trim() || !details.trim()) {
+            return res.status(400).json({ error: "Invalid input data" });
+        }
+
+        const InvoiceRef = ref(database, "WifiExpenses");
+        const newInvoiceRef = push(InvoiceRef);
+
+        res.status(200).json({ success: true });
+
+        // تنفيذ العملية في الخلفية بعد إرسال الاستجابة
+        setTimeout(async () => {
+            await set(newInvoiceRef, {
+                amount: Number(amount),
+                employee: employee.trim(),
+                details: details.trim(),
+                timestamp: date,
+            });
+        }, 0);
+        
+    } catch (error) {
+        console.error("Error in /addWifiExpenses:", error);
+        res.status(500).json({ error: "Internal server error. Please try again later." });
+    }
+});
+
+
+
+
 
 
 
