@@ -763,7 +763,7 @@ app.post("/addWifiExpenses", async (req, res) => {
             return res.status(400).json({ error: "Invalid input data" });
         }
 
-        const InvoiceRef = ref(database, "WifiExpenses");
+        const InvoiceRef = ref(database, "WifiBalance");
         const newInvoiceRef = push(InvoiceRef);
 
         res.status(200).json({ success: true });
@@ -785,7 +785,36 @@ app.post("/addWifiExpenses", async (req, res) => {
 });
 
 
+const fetchData = async (path) => {
+    try {
+        const dbRef = ref(database);
+        const snapshot = await get(child(dbRef, path));
 
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            return Object.keys(data).map(key => ({ ...data[key] }));
+        } else {
+            console.log(`No data available at path: ${path}`);
+            return [];
+        }
+    } catch (error) {
+        console.error(`Error fetching data from ${path}:`, error);
+        return [];
+    }
+};
+
+app.get('/getWifiTotal', async (req, res) => {
+    try {
+        const [WifiBalance, WifiPayments] = await Promise.all([
+            fetchData("WifiBalance"),
+            fetchData("Payments")
+        ]);
+
+        res.status(200).json({ WifiBalance, WifiPayments });
+    } catch (error) {
+        res.status(500).json({ error: 'Error reading data: ' + error.message });
+    }
+});
 
 
 
