@@ -503,6 +503,20 @@ const getEmployeeBalanceTable = async (username) => {
     return invoiceList;
 };
 
+app.post("/getAllBalance", async (req, res) => {
+    try {
+        console.log("Received body:", req.body); // تحقق من البيانات المستقبلة
+        const { username } = req.body;
+
+        const balanceTable = await getEmployeeBalanceTable();
+        res.status(200).json({ BalanceTable: balanceTable });
+
+    } catch (error) {
+        console.error("Error:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post("/getEmployeeBalance", async (req, res) => {
     try {
         console.log("Received body:", req.body); // تحقق من البيانات المستقبلة
@@ -745,7 +759,7 @@ app.post("/addWifiExpenses", async (req, res) => {
         const { amount, employee, details } = req.body;
 
         // التحقق من المدخلات
-        if (!amount || isNaN(amount) || amount <= 0 || !employee.trim() || !details.trim()) {
+        if (!amount || isNaN(amount) || !employee.trim() || !details.trim()) {
             return res.status(400).json({ error: "Invalid input data" });
         }
 
