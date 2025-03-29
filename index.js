@@ -876,20 +876,19 @@ app.get('/getWifiTotal', async (req, res) => {
     }
 });
 
-
-app.post('/searchInFinancialStatment', async (req, res) => {
+app.post("/searchInFinancialStatment", async (req, res) => {
     const { searchValue } = req.body;
-
+  
     if (!searchValue) {
-      return res.status(400).json({ error: 'Search value is required' });
+      return res.status(400).json({ error: "Search value is required" });
     }
   
     try {
-      const ref = database.ref('dailyTotal');
-      const snapshot = await ref.once('value');
+      const dbRef = ref(db, "dailyTotal");
+      const snapshot = await get(dbRef);
   
       if (!snapshot.exists()) {
-        return res.status(404).json({ message: 'No data found' });
+        return res.status(404).json({ message: "No data found" });
       }
   
       const results = [];
@@ -904,14 +903,14 @@ app.post('/searchInFinancialStatment', async (req, res) => {
             const invoice = invoiceSnapshot.key;
             const invoiceData = invoiceSnapshot.val();
   
-            // Check inside details
+            // Ensure details exist and is an object
             if (invoiceData.details) {
-              invoiceData.details.forEach((detail) => {
+              Object.values(invoiceData.details).forEach((detail) => {
                 if (
                   detail.customerNumber === searchValue ||
-                  detail.customerDetails.includes(searchValue) ||
-                  detail.invoiceNumber.includes(searchValue) ||
-                  detail.invoiceValue.includes(searchValue)
+                  detail.customerDetails?.includes(searchValue) ||
+                  detail.invoiceNumber?.includes(searchValue) ||
+                  detail.invoiceValue?.includes(searchValue)
                 ) {
                   results.push({
                     date,
@@ -927,15 +926,11 @@ app.post('/searchInFinancialStatment', async (req, res) => {
         });
       });
   
-      res.json(results.length > 0 ? results : { message: 'No matching data found' });
+      res.json(results.length > 0 ? results : { message: "No matching data found" });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-    }
-);
-
-
-
+});
 
 
 
