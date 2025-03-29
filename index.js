@@ -480,7 +480,7 @@ const getEmployeeBalanceTable = async (username) => {
     const dbRef = ref(database);
     let invoiceList = []; // تأكد من أن القائمة معرفة دائمًا
 
-    if (username) {
+    if (username != "all") {
         // قائمة الفواتير للموظف
         const snapshot = await get(child(dbRef, `dailyTotal/${date}/${username}`));
         if (snapshot.exists()) {
@@ -508,7 +508,7 @@ app.post("/getAllBalance", async (req, res) => {
         console.log("Received body:", req.body); // تحقق من البيانات المستقبلة
         const { username } = req.body;
 
-        const balanceTable = await getEmployeeBalanceTable();
+        const balanceTable = await getEmployeeBalanceTable("all");
         res.status(200).json({ BalanceTable: balanceTable });
 
     } catch (error) {
@@ -641,6 +641,66 @@ cron.schedule("55 23 * * *", async () => {
     scheduled: true,
     timezone: "Asia/Damascus"
 })
+
+
+const getTotalDailyInvoicesWithDate = async (date) => {
+  try {
+    const dbRef = ref(database);
+    let totalAmount = 0;
+
+    // جلب بيانات اليوم المحدد
+    const snapshot = await get(child(dbRef, `dailyTotal/${date}`));
+
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+
+      // التكرار على جميع الموظفين وجمع قيم الفواتير
+      Object.keys(data).forEach(employee => {
+        Object.values(data[employee]).forEach(invoice => {
+          const amount = Number(invoice?.amount);
+          if (!isNaN(amount)) {
+            totalAmount += amount;
+          }
+        });
+      });
+    } else {
+      console.log(`لا توجد بيانات متاحة لليوم: ${date}`);
+    }
+
+    return totalAmount;
+  } catch (error) {
+    console.error('حدث خطأ أثناء حساب إجمالي الفواتير:', error);
+    return 0;
+  }
+};
+  
+
+app.post('/calculateTotalDailyBalance', async (req, res) => {
+    const { date } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ error: 'يرجى إرسال التاريخ المطلوب.' });
+    }
+
+    try {       
+        console.log("🔄 بدء حساب إجمالي الفواتير اليومية...");  
+        const balanceTotal = await getTotalDailyInvoicesWithDate(date);
+        const date = new Date().toISOString().split("T")[0];    
+        const insertedData = {
+            date: date,
+            total: balanceTotal,
+        };  
+        // حفظ البيانات في Firebase
+        const dailyTotalRef = ref(database, `dailyBalance/${date}`);
+        await set(dailyTotalRef, insertedData); 
+        console.log(`✅ تم حفظ إجمالي الفواتير اليومية (${balanceTotal}) ليوم ${date}`);
+
+    } catch (error) {
+    res.status(500).json({ error: 'خطأ في حساب إجمالي الفواتير.' });
+  }
+});
+
+
 
 
 const getEveryBalance = async () => {
