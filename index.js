@@ -684,8 +684,8 @@ app.post('/calculateTotalDailyBalance', async (req, res) => {
 
     try {       
         console.log("🔄 بدء حساب إجمالي الفواتير اليومية...");  
+        console.log(date)
         const balanceTotal = await getTotalDailyInvoicesWithDate(date);
-        const date = new Date().toISOString().split("T")[0];    
         const insertedData = {
             date: date,
             total: balanceTotal,
@@ -696,8 +696,8 @@ app.post('/calculateTotalDailyBalance', async (req, res) => {
         console.log(`✅ تم حفظ إجمالي الفواتير اليومية (${balanceTotal}) ليوم ${date}`);
 
     } catch (error) {
-    res.status(500).json({ error: 'خطأ في حساب إجمالي الفواتير.' });
-  }
+    res.status(500).json({ error: 'خطأ في حساب إجمالي الفواتير.' + error });
+    }
 });
 
 
