@@ -884,7 +884,7 @@ app.post("/searchInFinancialStatment", async (req, res) => {
     }
   
     try {
-      const dbRef = ref(db, "dailyTotal");
+      const dbRef = ref(database, "dailyTotal");
       const snapshot = await get(dbRef);
   
       if (!snapshot.exists()) {
