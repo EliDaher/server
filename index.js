@@ -909,8 +909,7 @@ app.post("/searchInFinancialStatment", async (req, res) => {
                 if (
                   detail.customerNumber === searchValue ||
                   detail.customerDetails?.includes(searchValue) ||
-                  detail.invoiceNumber?.includes(searchValue) ||
-                  detail.invoiceValue?.includes(searchValue)
+                  detail.invoiceNumber?.includes(searchValue) 
                 ) {
                   results.push({
                     date,
