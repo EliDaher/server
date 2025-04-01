@@ -932,6 +932,98 @@ app.post("/searchInFinancialStatment", async (req, res) => {
 });
 
 
+app.post("/addPayment", async (req, res) => {
+    try {
+        const { amount, date, details, subscriberID, total, dealer } = req.body;
+        
+        if (!amount || !date || !details || !subscriberID || total === undefined) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        if(!dealer){
+
+            const dbRef = ref(database, "Payments");
+            const snapshot = await get(dbRef);
+            const subscriberCount = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+            const paymentID = subscriberCount + 1; 
+            
+            // إنشاء بيانات الدفع
+            const formData = {
+                Amount: amount,
+                Date: date,
+                Details: details,
+                PaymentID: paymentID,
+                SubscriberID: subscriberID,
+                id: paymentID,
+            };
+
+            const newDataRef = ref(database, `Payments/${paymentID}`);
+            await set(newDataRef, formData);
+
+            const newTotal = Number(total) + Number(amount);
+            const updateCustomerBalance = ref(database, `Subscribers/${subscriberID}/Balance`);
+            await set(updateCustomerBalance, newTotal);
+
+            res.status(200).json({ message: "Payment added successfully", paymentID, newTotal });
+
+        }else{
+
+            const dbRef = ref(database, "Payments");
+            const snapshot = await get(dbRef);
+            const subscriberCount = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+            const paymentID = subscriberCount + 1; 
+            
+            // إنشاء بيانات الدفع
+            const formData = {
+                Amount: amount,
+                Date: date,
+                Details: details,
+                PaymentID: paymentID,
+                SubscriberID: subscriberID,
+                id: paymentID,
+            };
+
+            const newDataRef = ref(database, `Payments/${paymentID}`);
+            await set(newDataRef, formData);
+            
+            const dealerRedf = ref(database, `dealerPayments/${dealer}/${paymentID}`);
+            await set(dealerRedf, formData);
+
+            const newTotal = Number(total) + Number(amount);
+            const updateCustomerBalance = ref(database, `Subscribers/${subscriberID}/Balance`);
+            await set(updateCustomerBalance, newTotal);
+
+            res.status(200).json({ message: "Payment added successfully", paymentID, newTotal });
+            
+        }
+        } catch (error) {
+            console.error("Error adding payment:", error);
+            res.status(500).json({ error: "Internal server error" });
+        }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
