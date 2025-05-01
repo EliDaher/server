@@ -1,7 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
-const { ref, get, child, query, orderByChild, equalTo, push, set, limitToLast } = require("firebase/database");
+const { getDatabase , update, ref, get, child, query, orderByChild, equalTo, push, set, limitToLast } = require("firebase/database");
 const { database } = require('./firebaseConfig.js');
 const http = require('http');
 require('dotenv').config(); // تحميل متغيرات البيئة
@@ -532,54 +532,61 @@ app.post("/getEmployeeBalance", async (req, res) => {
 });
 
 
-cron.schedule("0 0 1 * *", async () => {
-    
-    try {
-      const subscribersRef = database.ref("Subscribers");
-      const invoicesRef = database.ref("Invoices");
-  
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const invoiceDate = `${year}-${month}-01`;
-  
-      const snapshot = await subscribersRef.once("value");
-      const subscribers = snapshot.val();
-  
-      if (!subscribers) {
-        console.log(" لا يوجد مشتركين!");
-        return;
-      }
-  
-      const updates = {};
-  
-      Object.keys(subscribers).forEach((userId) => {
-        const subscriber = subscribers[userId];
-  
-        if (subscriber.monthlyFee) {
-          const invoiceId = invoicesRef.push().key; // 🔹 إنشاء معرف فريد لكل فاتورة
-          updates[`Invoices/${invoiceId}`] = {
-            Amount: String(subscriber.monthlyFee),
-            Date: invoiceDate,
-            Details: " فاتورة شهر " + month,
-            InvoiceID: invoiceId, // تخزين نفس المعرف داخل الفاتورة
-            SubscriberID: String(userId),
-            id: invoiceId
-          };
-        }
-      });
-  
-      await database.ref().update(updates);
-      console.log(" تم إنشاء الفواتير بنجاح!");
-  
-    } catch (error) {
-      console.error(" خطأ أثناء إنشاء الفواتير:", error);
-    }
-}, {
-    scheduled: true,
-    timezone: "Asia/Damascus"
-});
 
+async function createMonthlyInvoices() {
+  try {
+    const db = getDatabase();
+    const subscribersRef = ref(db, "Subscribers");
+    const invoicesRef = ref(db, "Invoices");
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const invoiceDate = `${year}-${month}-01`;
+
+    const snapshot = await get(subscribersRef);
+    const subscribers = snapshot.val();
+
+    if (!subscribers) {
+      console.log("❗ لا يوجد مشتركين!");
+      return;
+    }
+
+    const updates = {};
+
+    Object.keys(subscribers).forEach((userId) => {
+      const subscriber = subscribers[userId];
+
+      if (subscriber.MonthlyFee) {
+        const newInvoiceRef = push(invoicesRef);
+        const invoiceId = newInvoiceRef.key;
+
+        updates[`Invoices/${invoiceId}`] = {
+          Amount: String(subscriber.MonthlyFee),
+          Date: invoiceDate,
+          Details: "فاتورة شهر " + month,
+          InvoiceID: invoiceId,
+          SubscriberID: String(userId),
+          id: invoiceId
+        };
+      }
+    });
+
+    await update(ref(db), updates);
+    console.log("✅ تم إنشاء الفواتير بنجاح!");
+
+  } catch (error) {
+    console.error("❌ خطأ أثناء إنشاء الفواتير:", error.message);
+  }
+}
+
+cron.schedule("0 0 1 * *", async () => {
+  console.log("📆 بدء إنشاء الفواتير الشهرية...");
+  await createMonthlyInvoices();
+}, {
+  scheduled: true,
+  timezone: "Asia/Damascus"
+});
 
 
 const getTotalDailyInvoices = async () => {
