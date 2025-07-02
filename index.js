@@ -531,8 +531,6 @@ app.post("/getEmployeeBalance", async (req, res) => {
     }
 });
 
-
-
 async function createMonthlyInvoices() {
   try {
     const db = getDatabase();
@@ -561,19 +559,27 @@ async function createMonthlyInvoices() {
         const newInvoiceRef = push(invoicesRef);
         const invoiceId = newInvoiceRef.key;
 
+        const monthlyFee = Number(subscriber.MonthlyFee);
+        const currentBalance = Number(subscriber.Balance) || 0;
+
+        // إضافة الفاتورة
         updates[`Invoices/${invoiceId}`] = {
-          Amount: String(subscriber.MonthlyFee),
+          Amount: monthlyFee,
           Date: invoiceDate,
-          Details: "فاتورة شهر " + month,
+          Details: `اشتراك شهري عن ${month}-${year}`,
           InvoiceID: invoiceId,
           SubscriberID: String(userId),
+          Status: "Unpaid",
           id: invoiceId
         };
+
+        // خصم الرصيد
+        updates[`Subscribers/${userId}/Balance`] = currentBalance - monthlyFee;
       }
     });
 
     await update(ref(db), updates);
-    console.log("✅ تم إنشاء الفواتير بنجاح!");
+    console.log("✅ تم إنشاء الفواتير وتحديث الأرصدة بنجاح!");
 
   } catch (error) {
     console.error("❌ خطأ أثناء إنشاء الفواتير:", error.message);
