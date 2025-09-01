@@ -537,9 +537,10 @@ async function createMonthlyInvoices() {
     const subscribersRef = ref(db, "Subscribers");
     const invoicesRef = ref(db, "Invoices");
 
-    const now = new Date();
+    const now = getLocalDate(); // ✅ التاريخ المحلي
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
+
     const invoiceDate = `${year}-${month}-01`;
 
     const snapshot = await get(subscribersRef);
